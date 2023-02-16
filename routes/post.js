@@ -7,6 +7,7 @@ const {
   getPosts,
   likePost,
   deslikePost,
+  serchPosts,
 } = require("../controllers/post");
 const verifyJWT = require("../middleware/verifyJWT");
 const postRout = express.Router();
@@ -19,4 +20,5 @@ postRout
   .put(verifyJWT, updatePost)
   .delete(verifyJWT, deletPost);
 postRout.route("/:id/deslike").patch(verifyJWT, deslikePost);
+postRout.route("/search").post(serchPosts);
 module.exports = postRout;

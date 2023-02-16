@@ -73,10 +73,7 @@ const dislikeComment = async (req, res) => {
 
   try {
     const foundComment = await Comment.findById(id);
-    if (foundComment.meta.likes === 0) {
-      return res.status(204).send("you cant deslike this comment");
-    }
-    foundComment.meta.likes--;
+    foundComment.meta.deslikes++;
     foundComment.save();
     res.status(201).json({
       success: true,

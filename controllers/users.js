@@ -163,6 +163,8 @@ const followUser = async (req, res) => {
   console.log(req.body);
   try {
     await Follower.create(req.body);
+    const foundUser = await User.findById(req.body.following_by);
+    foundUser.follwing.push(req.body.id);
     res.status(201).json({
       success: true,
       message: "following user successfully",

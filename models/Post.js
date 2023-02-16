@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const blogSchema = new Schema({
-  title: String, // String is shorthand for {type: String}
+  title: {
+    type: String,
+  }, // String is shorthand for {type: String}
   author: {
     id: String,
     firstName: String,
@@ -27,6 +29,6 @@ const blogSchema = new Schema({
     },
   ],
 });
-
+blogSchema.index({ title: "text" });
 const Post = mongoose.model("Post", blogSchema);
 module.exports = Post;
