@@ -8,7 +8,7 @@ const getUser = async (req, res) => {
 
   try {
     const user = await User.find({ _id: req?.params?.id }).exec();
-    // console.log(user);
+
     res.status(200).json({
       error: false,
       message: "get user successfull",
@@ -52,10 +52,8 @@ const deletUser = async () => {
 
 const updateUser = async (req, res) => {
   const id = req.params.id;
-  console.log(req.body);
   try {
     const response = await User.updateOne({ _id: id }, { ...req.body });
-    console.log(response);
     if (!res) {
       return res.status(404).send("the user does not exist");
     }
@@ -88,7 +86,6 @@ const addToReadingList = async (req, res) => {
       return false;
     });
 
-    console.log(isFound);
     if (isFound) {
       return res.status(204).json({
         success: true,
@@ -123,10 +120,8 @@ const deleteFromReadingList = async (req, res) => {
     const isFound = foundUser.reading_list.filter((element) => {
       return element._id === req.body.id;
     });
-    // console.log(foundUser);
 
     foundUser.reading_list = [...isFound];
-    console.log(foundUser.reading_list);
     await foundUser.save();
     res.status(201).json({
       success: true,
@@ -160,15 +155,15 @@ const getUserPosts = async (req, res) => {
 };
 
 const followUser = async (req, res) => {
-  console.log(req.body);
   try {
     await Follower.create(req.body);
-    const foundUser = await User.findById(req.body.following_by);
-    foundUser.follwing.push(req.body.id);
+    const foundUser = await User.findById(req.body.id);
+    foundUser.followers.push(req.body.following_by);
     res.status(201).json({
       success: true,
       message: "following user successfully",
     });
+    foundUser.save();
   } catch (error) {
     res.status(500).json({
       error: error.message,
@@ -176,9 +171,12 @@ const followUser = async (req, res) => {
   }
 };
 const unfollowUser = async (req, res) => {
-  console.log(req.body);
   try {
     await Follower.findByIdAndDelete(req.params.id);
+    const foundUser = await User.findById(req.body.id);
+    const idd = foundUser.followers.filter((f) => f !== req.body.followerId);
+    foundUser.followers = idd;
+    await foundUser.save();
     res.status(201).json({
       success: true,
       message: "following user successfully",

@@ -13,7 +13,6 @@ const mongoClient = new MongoClient(url);
 const uploadFiles = async (req, res) => {
   try {
     await upload(req, res);
-    console.log(req.files);
 
     if (req.files.length <= 0) {
       return res
@@ -25,8 +24,6 @@ const uploadFiles = async (req, res) => {
       message: "Files have been uploaded.",
     });
   } catch (error) {
-    console.log(error);
-
     if (error.code === "LIMIT_UNEXPECTED_FILE") {
       return res.status(400).send({
         message: "Too many files to upload.",

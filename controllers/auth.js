@@ -39,7 +39,6 @@ const register = async (req, res, next) => {
       sameSite: "None",
       maxAge: 24 * 60 * 60 * 1000,
     });
-    console.log(req.cookies.jwt);
     res.status(201).json({
       error: false,
       message: "Account created sucessfully",
@@ -47,7 +46,6 @@ const register = async (req, res, next) => {
       userId: newUser._id,
     });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 };
@@ -86,13 +84,11 @@ const login = async (req, res) => {
       userId: user._id,
     });
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: true, message: "Internal Server Error" });
   }
 };
 const googleAuth = async (req, res) => {
   const { tokens } = await oAuth2Client.getToken(req.body.code); // exchange code for tokens
-  console.log(tokens);
 
   res.json(tokens);
 };
@@ -116,7 +112,6 @@ const Logout = async (req, res) => {
   // Delete refreshToken in db
   foundUser.refreshToken = "";
   const result = await foundUser.save();
-  console.log(result);
 
   res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
   res.sendStatus(204);

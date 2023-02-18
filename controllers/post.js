@@ -140,11 +140,9 @@ const deslikePost = async (req, res) => {
 };
 
 const serchPosts = async (req, res) => {
-  console.log(req.body);
   try {
     const posts = await Post.find({ $text: { $search: req.body.input } });
     res.send(posts);
-    console.log(posts);
   } catch (error) {}
 };
 
