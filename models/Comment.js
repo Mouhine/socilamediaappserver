@@ -9,10 +9,7 @@ const CommentSchema = new mongoose.Schema({
   },
   body: String,
   belong_to: String,
-  meta: {
-    likes: Number,
-    deslikes: Number,
-  },
+  likes: Number,
 });
 
 const Comment = mongoose.model("comment", CommentSchema);

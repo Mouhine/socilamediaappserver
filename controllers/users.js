@@ -2,6 +2,8 @@ const { default: mongoose } = require("mongoose");
 const User = require("../models/User");
 const Post = require("../models/Post");
 const Follower = require("../models/Follower");
+const Like = require("../models/Like");
+const Comment = require("../models/Comment");
 const getUser = async (req, res) => {
   if (!req?.params?.id)
     return res.status(400).json({ message: "user ID required." });
@@ -36,18 +38,24 @@ const getUsers = async (req, res) => {
   }
 };
 
-const deletUser = async () => {
+const deletUser = async (req, res) => {
   if (!req?.params?.id)
     return res.status(400).json({ message: "Employee ID required." });
-
-  const foundUser = await User.findOne({ _id: req.params.id }).exec();
-  if (!foundUser) {
-    return res
-      .status(204)
-      .json({ message: `No employee matches ID ${req.params.id}.` });
+  try {
+    const foundUser = await User.findOne({ _id: req.params.id }).exec();
+    if (!foundUser) {
+      return res
+        .status(204)
+        .json({ message: `No user matches ID ${req.params.id}.` });
+    }
+    await foundUser.deleteOne(); //{ _id: req.body.id }
+    await Like.deleteMany({ userId: req?.params?.id });
+    await Post.deleteMany({ "author.id": req?.params?.id });
+    await Comment.deleteMany({ "author.id": req?.params?.id });
+    res.status(200).send("user deleted successfully");
+  } catch (error) {
+    res.status(500).send("server error");
   }
-  const result = await foundUser.deleteOne(); //{ _id: req.body.id }
-  res.json(result);
 };
 
 const updateUser = async (req, res) => {
@@ -73,26 +81,26 @@ const addToReadingList = async (req, res) => {
     return res.status(404).send(`No post with id: ${req?.params?.id}`);
 
   const foundUser = await User.findOne({ _id: req.params.id }).exec();
+
   if (!foundUser) {
     return res
       .status(204)
-      .json({ message: `No employee matches ID ${req.params.id}.` });
+      .json({ message: `No user matches ID ${req.params.id}.` });
   }
   try {
-    const isFound = foundUser.reading_list.some((element) => {
-      if (element._id === req.body._id) {
-        return true;
-      }
-      return false;
-    });
+    const isFound = foundUser.reading_list.some(
+      (element) => element.title === req.body.title
+    );
+    console.log(isFound);
 
     if (isFound) {
-      return res.status(204).json({
+      return res.status(200).json({
         success: true,
         message: "this post already exist",
       });
     }
     foundUser.reading_list.push(req.body);
+
     await foundUser.save();
     res.status(201).json({
       success: true,
@@ -105,24 +113,24 @@ const addToReadingList = async (req, res) => {
 };
 
 const deleteFromReadingList = async (req, res) => {
-  if (!req?.params?.id)
-    return res.status(400).json({ message: "Employee ID required." });
-  if (!mongoose.Types.ObjectId.isValid(req?.params?.id))
-    return res.status(404).send(`No post with id: ${req?.params?.id}`);
-
-  const foundUser = await User.findOne({ _id: req.params.id }).exec();
+  console.log(req.params.userId);
+  const foundUser = await User.find({ _id: req.params.userId }).exec();
+  console.log(foundUser.reading_list);
   if (!foundUser) {
     return res
       .status(204)
       .json({ message: `No employee matches ID ${req.params.id}.` });
   }
-  try {
-    const isFound = foundUser.reading_list.filter((element) => {
-      return element._id === req.body.id;
-    });
 
-    foundUser.reading_list = [...isFound];
-    await foundUser.save();
+  try {
+    const isFound = foundUser[0].reading_list.filter(
+      (element) => element.date !== req.body.filter
+    );
+
+    console.log(isFound);
+
+    foundUser[0].reading_list = [...isFound];
+    await foundUser[0].save();
     res.status(201).json({
       success: true,
     });
@@ -159,27 +167,31 @@ const followUser = async (req, res) => {
     await Follower.create(req.body);
     const foundUser = await User.findById(req.body.id);
     foundUser.followers.push(req.body.following_by);
+    await foundUser.save();
     res.status(201).json({
       success: true,
       message: "following user successfully",
     });
-    foundUser.save();
   } catch (error) {
     res.status(500).json({
       error: error.message,
     });
   }
 };
+
 const unfollowUser = async (req, res) => {
+  console.log("unfollow user");
+  const { id, followerId } = req.body;
   try {
-    await Follower.findByIdAndDelete(req.params.id);
+    await Follower.deleteOne({ id: id });
     const foundUser = await User.findById(req.body.id);
     const idd = foundUser.followers.filter((f) => f !== req.body.followerId);
+    console.log(idd);
     foundUser.followers = idd;
     await foundUser.save();
     res.status(201).json({
       success: true,
-      message: "following user successfully",
+      message: "unfollowing user successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -211,4 +223,5 @@ module.exports = {
   deleteFromReadingList,
   getFollowers,
   unfollowUser,
+  deletUser,
 };

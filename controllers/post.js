@@ -2,8 +2,11 @@ const { default: mongoose } = require("mongoose");
 const { findOneAndUpdate } = require("../models/Post");
 const Post = require("../models/Post");
 const User = require("../models/User");
+const Like = require("../models/Like");
+const Comment = require("../models/Comment");
 const getPost = async (req, res) => {
   const { id } = req.params;
+  console.log(id);
   try {
     if (!id) res.status(401).json({ success: false, message: "invalid id" });
     const post = await Post.findById(id);
@@ -21,18 +24,28 @@ const getPost = async (req, res) => {
     });
   }
 };
+
 const getPosts = async (req, res) => {
   try {
-    const posts = await Post.find().exec();
-    if (!posts)
+    const posts = await Post.find();
+    posts.map(async (post) => {
+      const postLikes = await Like.findById(post._id).count();
+      return {
+        ...post,
+        likes: postLikes,
+      };
+    });
+    const Posts = await Promise.all(posts);
+
+    if (!Posts)
       res
         .status(403)
-        .json({ success: false, message: "coulde not find the post" });
+        .json({ success: false, message: "coulde not find the posts" });
 
     res.status(200).json({
       success: true,
       message: "request successfull",
-      posts,
+      Posts,
     });
   } catch (error) {
     res.status(500).json({
@@ -41,6 +54,7 @@ const getPosts = async (req, res) => {
     });
   }
 };
+
 const addPost = async (req, res) => {
   try {
     if (!req.body)
@@ -60,6 +74,7 @@ const addPost = async (req, res) => {
     });
   }
 };
+
 const updatePost = async (req, res) => {
   const post = { ...req.body };
   try {
@@ -80,6 +95,7 @@ const updatePost = async (req, res) => {
     });
   }
 };
+
 const deletPost = async (req, res) => {
   const { id } = req.params;
   try {
@@ -89,6 +105,8 @@ const deletPost = async (req, res) => {
         message: "bad request",
       });
     const foundPost = await Post.findById({ _id: id });
+    await Like.deleteMany({ postId: id });
+    await Comment.deleteMany({ belong_to: id });
     const result = foundPost.deleteOne();
     res.status(200).json({
       success: true,
@@ -102,36 +120,40 @@ const deletPost = async (req, res) => {
     });
   }
 };
+
 const likePost = async (req, res) => {
   const id = req.params.id;
   try {
-    // if (!mongoose.Types.ObjectId.isValid(id))
-    //   return res.status(404).send(`No post with id: ${id}`);
-    const foundPost = await Post.find({ _id: id });
-    foundPost[0].meta.favs++;
-    foundPost[0].save();
+    const like = await Like.find({ postId: id, userId: req.body.userId });
 
-    res.status(200).json({
-      foundPost: foundPost[0],
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-const deslikePost = async (req, res) => {
-  const id = req.params.id;
-  try {
-    // if (!mongoose.Types.ObjectId.isValid(id))
-    //   return res.status(404).send(`No post with id: ${id}`);
-    const foundPost = await Post.find({ _id: id });
-    foundPost[0].meta.favs--;
-    foundPost[0].save();
+    if (like.length === 0) {
+      const like = await Like.create({
+        userId: req.body.userId,
+        postId: id,
+      });
+      const foundPost = await Post.findById(id);
+      foundPost.likes++;
+      foundPost.likedBy.push(req.body.userId);
+      await foundPost.save();
+      console.log(foundPost);
+      return res.status(201).send("liked post successfully");
+    }
 
-    res.status(200).json({
-      foundPost: foundPost[0],
-    });
+    await Like.deleteOne({ postId: id });
+
+    const foundPost = await Post.findById(id);
+    if (foundPost.likes === 0) {
+      return res.status(204).send("you cant deslike this post anymore");
+    }
+    foundPost.likes--;
+    const filtredLikes = foundPost.likedBy.filter(
+      (userId) => userId !== req.body.userId
+    );
+
+    foundPost.likedBy = [...filtredLikes];
+    await foundPost.save();
+    console.log(foundPost);
+    res.status(200).send("desliksed post successfully");
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -146,6 +168,22 @@ const serchPosts = async (req, res) => {
   } catch (error) {}
 };
 
+const isLikedByMe = async (req, res) => {
+  const { userId, postId } = req.body;
+  try {
+    const like = await Like.find({ userId: userId, postId: postId });
+    console.log(like[0]);
+    if (like[0]) {
+      return res.status(200).send({
+        likedByMe: true,
+      });
+    }
+    res.status(200).send({
+      likedByMe: false,
+    });
+  } catch (error) {}
+};
+
 module.exports = {
   getPost,
   getPosts,
@@ -153,6 +191,6 @@ module.exports = {
   updatePost,
   addPost,
   likePost,
-  deslikePost,
   serchPosts,
+  isLikedByMe,
 };

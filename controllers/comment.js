@@ -1,4 +1,5 @@
 const Comment = require("../models/Comment");
+const Like = require("../models/Like");
 const getComments = async (req, res) => {
   if (!req?.params?.id) {
     return res.status(400).json({
@@ -51,45 +52,27 @@ const deletComment = async (req, res) => {
   }
 };
 const likeComment = async (req, res) => {
-  const { id } = req.body;
-
+  const { commentId, userId } = req.body;
   try {
-    const foundComment = await Comment.findById(id);
-    foundComment.meta.likes++;
-    foundComment.save();
-    res.status(201).json({
-      success: true,
-      message: "liked comment successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-const dislikeComment = async (req, res) => {
-  const { id } = req.body;
+    const like = await Like.find({ commentId: commentId, userId: userId });
+    const foundComment = await Comment.findById(commentId);
+    if (like.length === 0) {
+      await Like.create({ userId, commentId });
+      foundComment.likes++;
+      foundComment.save();
+      res.status(201).send("liked comment successfully");
+    }
 
-  try {
-    const foundComment = await Comment.findById(id);
-    foundComment.meta.deslikes++;
+    await Like.deleteOne({ userId: userId });
+    foundComment.likes--;
     foundComment.save();
-    res.status(201).json({
-      success: true,
-      message: "liked comment successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+    res.status(200).send("dislike comment successfully");
+  } catch (error) {}
 };
+
 module.exports = {
   addComment,
   getComments,
   likeComment,
-  dislikeComment,
   deletComment,
 };

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Like = require("./Like");
 const { Schema } = mongoose;
 const blogSchema = new Schema({
   title: {
@@ -17,10 +18,11 @@ const blogSchema = new Schema({
   },
   body: String,
   date: { type: Date, default: Date.now },
-  meta: {
-    votes: Number,
-    favs: Number,
+  likes: {
+    type: Number,
+    default: 0,
   },
+  likedBy: [String],
   cover: String,
   tags: [
     {

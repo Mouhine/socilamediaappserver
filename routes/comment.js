@@ -9,5 +9,5 @@ commentRouter
   .post(verifyJWT, CommentHandller.addComment)
   .delete(verifyJWT, CommentHandller.deletComment);
 commentRouter.patch("/:id/like", CommentHandller.likeComment);
-commentRouter.patch("/:id/dislike", CommentHandller.dislikeComment);
+
 module.exports = commentRouter;
