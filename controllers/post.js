@@ -28,16 +28,8 @@ const getPost = async (req, res) => {
 const getPosts = async (req, res) => {
   try {
     const posts = await Post.find();
-    posts.map(async (post) => {
-      const postLikes = await Like.findById(post._id).count();
-      return {
-        ...post,
-        likes: postLikes,
-      };
-    });
-    const Posts = await Promise.all(posts);
 
-    if (!Posts)
+    if (!posts)
       res
         .status(403)
         .json({ success: false, message: "coulde not find the posts" });
@@ -45,7 +37,7 @@ const getPosts = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "request successfull",
-      Posts,
+      posts,
     });
   } catch (error) {
     res.status(500).json({
