@@ -28,7 +28,6 @@ const getPost = async (req, res) => {
 const getPosts = async (req, res) => {
   try {
     const posts = await Post.find();
-
     if (!posts)
       res
         .status(403)
