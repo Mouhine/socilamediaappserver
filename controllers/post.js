@@ -6,7 +6,7 @@ const Like = require("../models/Like");
 const Comment = require("../models/Comment");
 const getPost = async (req, res) => {
   const { id } = req.params;
-  console.log(id);
+
   try {
     if (!id) res.status(401).json({ success: false, message: "invalid id" });
     const post = await Post.findById(id);
